@@ -9,14 +9,11 @@
 #include <sys/time.h>
 #include <grp.h>
 #include <pwd.h>
-#include <time.h>
-#define TRUE 1
-#define FALSE 0
 
-static const char *lokasi_asal = "/home/adam/shift4";
+static const char *lokasi_asal = "/home/salsha/modul4";
 char daftar_huruf[1024] = "qE1~ YMUR2\"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>}!9_wV']jcp5JZ&Xl|\\8s;g<{3.u*W-0";
-char epath[1000], dpath[1000];
 void Buka_sandi(char *nama);
+char folder[1000];
 
 void Sandi(char *nama)
 {
@@ -26,7 +23,7 @@ void Sandi(char *nama)
 	while(i < strlen(nama)){
 		for(int j = 0; j < 94; j++){
 			if(daftar_huruf[j] == nama[i]){
-				int indeks = (j + 31) % 94;
+				int indeks = (j + 17) % 94;
 				if(indeks < 0) indeks += 94;
 				nama[i] = daftar_huruf[indeks];
 				j = 100;
@@ -57,110 +54,69 @@ static int xmp_getattr(const char *path, struct stat *stbuf)
 static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		       off_t offset, struct fuse_file_info *fi)
 {
-	char fpath[1000];
-	if(strcmp(path,"/") == 0)
-	{
-		path=lokasi_asal;
-		sprintf(fpath,"%s",path);
-	}
-	else
-	{
-		//no.1
-		strcpy(epath, path);
-		if(strcmp(epath, ".") != 0 && strcmp(epath, "..") != 0)Sandi(epath);
-		sprintf(fpath, "%s%s", lokasi_asal, epath);
-	}
-	int res = 0;
-
+	char fs[1000], folder[1000];
+	sprintf(fs,"%s",path);
+	Sandi(fs);
+	sprintf(folder,"%s%s",lokasi_asal, fs);
 	DIR *dp;
 	struct dirent *de;
 
 	(void) offset;
 	(void) fi;
 
-	dp = opendir(fpath);
+	dp = opendir(folder);
 	if (dp == NULL)
 		return -errno;
 
-	while ((de = readdir(dp)) != NULL)
-	{
+	while ((de = readdir(dp)) != NULL) {
 		struct stat st;
-		memset(&st, 0, sizeof(st));
-
-		//show
-		char show[2000];
-		snprintf(show, 2000, "%s/%s", fpath, de->d_name);
-		//de->d_name
-		stat(show, &st);
-
-		st.st_ino = de->d_ino;
-		st.st_mode = de->d_type << 12;
-
-		//no.1 dan 3
-		strcpy(dpath, de->d_name);
-		//printf("directory : %s\n",show);
-
-		if(strcmp(dpath, ".") != 0 && strcmp(dpath, "..") != 0)
+		struct stat tiga;
+		FILE *yap;
+		char name[4096];
+		char haha[4096];
+		memset(name,0,4096);
+		memset(haha,0,4096);
+		strcpy(name,de->d_name);
+		sprintf(haha,"%s%s", folder, name);
+		Buka_sandi(name);
+		
+		stat(haha,&tiga);
+		struct passwd *pass;
+		pass = getpwuid(tiga.st_uid);
+    	struct group *grouptiga;
+		grouptiga = getgrgid(tiga.st_gid);
+		
+		if((strcmp(pass->pw_name,"chipset") == 0 || strcmp(pass->pw_name,"ic_controller") == 0) && strcmp(grouptiga->gr_name,"rusak")==0)
 		{
-			//no.3
-			struct passwd *p = getpwuid(st.st_uid);
-			struct group *g = getgrgid(st.st_gid);
-			//time_t wktu = time(NULL);
-			struct tm *waktu = localtime(&st.st_atime);
-			//st.st_atime
-
-			//printf("%s %s %s\n",dpath,p->pw_name,g->gr_name);
-			if( p != NULL && g != NULL )
+			if((tiga.st_mode & S_IRUSR) == 0 || (tiga.st_mode & S_IRGRP) == 0 || (tiga.st_mode & S_IROTH) == 0)
 			{
-				//comparing username and group (YES!!!!)
-				if( (strcmp(p->pw_name, "chipset") == 0 || strcmp(p->pw_name, "ic_controller") == 0) && strcmp(g->gr_name, "rusak") == 0 )
-				{
-					//check if file readable
-					if(fopen(show, "r") == NULL)
-					{
-						//error access??
-						if(errno == EACCES)
-						{
-							//it's time for record
-							FILE *teks;
-							int tahun = waktu->tm_year + 1900;
-							char sumber[1000];
-							char ketikan[2064];
-							Buka_sandi(dpath);
-							sprintf(sumber, "%s/V[EOr[c[Y`HDH", lokasi_asal);
-							sprintf(ketikan, "%s %d %d | waktu : %02d:%02d:%02d [%02d %02d %04d]\n", dpath, st.st_uid, st.st_gid, waktu->tm_hour, waktu->tm_min, waktu->tm_sec, waktu->tm_mday, waktu->tm_mon, tahun);
-							teks = fopen(sumber, "a");
-							fputs(ketikan, teks);
-							fclose(teks);
-
-							remove(show);
-						}
-					}	
-
-					//no.1
-					else 
-					{
-						Buka_sandi(dpath);
-						res = (filler(buf, dpath, &st, 0));
-						if(res!=0) break;
-					}
-				}
-
-				//no.1
-				else 
-				{
-					Buka_sandi(dpath);
-					res = (filler(buf, dpath, &st, 0));
-					if(res!=0) break;
-				}
+				char isi[1024];
+				char isifile[1024];
+				char simpan[1024]="/filemiris.txt";
+				char asli[1024]="/home/salsha/modul4";
+				time_t waktu =time(NULL);
+				Sandi(simpan);
+				strcat(asli,simpan);
+				yap=fopen(asli,"a+");
+				strftime(isi, 20 ,"%Y-%m-%d %H:%M:%S", localtime(&waktu));
+				snprintf(isifile,sizeof(isifile), "%s%s-%d-%d-%s",path,name,pass->pw_uid,grouptiga->gr_gid,isi);
+				fprintf(yap,"%s",isifile);
+				remove(haha);
+				fclose(yap);
+				chown(asli,1000,1000);
 			}
 		}
-
-		
+		else
+		{
+			memset(&st, 0, sizeof(st));
+			st.st_ino = de->d_ino;
+			st.st_mode = de->d_type << 12;
+			if (filler(buf, name, &st, 0))
+				break;			
+		}
 	}
-
 	closedir(dp);
-return 0;
+	return 0;
 }
 
 static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
@@ -249,7 +205,11 @@ static int xmp_mkdir(const char *path, mode_t mode)
 	sprintf(fpath, "%s%s",lokasi_asal,sementara);
 
 	int res;
-	res = mkdir(fpath, mode);
+	if(strstr(fpath, "/@ZA>AXio/") != NULL)
+    {
+    	res = mkdir(fpath, 0750);
+    }
+    else res = mkdir(fpath, mode);
 
 	if (res == -1)
 		return -errno;
@@ -257,25 +217,44 @@ static int xmp_mkdir(const char *path, mode_t mode)
 	return 0;
 }
 
-static int xmp_create(const char* path, mode_t mode, struct fuse_file_info* fi) {
-
+static int xmp_create(const char* path, mode_t mode, struct fuse_file_info* fi)
+{
 	(void) fi;
 
-	int res;
+	int res, res2;
 
 	char fpath[1000];
 	char sementara[1000];
+	char file_baru[1000];
 	sprintf(sementara,"%s",path);
 
 	Sandi(sementara);
 
 	sprintf(fpath, "%s%s",lokasi_asal,sementara);
-	//
 
-	res = creat(fpath, mode);
-	if(res == -1) return -errno;
+	if(strstr(fpath, "/@ZA>AXio/") != NULL)
+    {
+    	res = creat(fpath, 0640);
+    }
+    else res = creat(fpath, mode);
+
+    if(res == -1)
+    {
+    	return -errno;
+    }
 	
 	close(res);
+
+	if(strstr(fpath, "/@ZA>AXio/") != NULL)
+    {
+    	strcpy(file_baru, fpath);
+    	strcat(file_baru, "`[S%");
+    	res2 = rename(fpath, file_baru);
+    	if(res2==-1)
+        {
+                return -errno;
+        }
+    }
 
 	return 0;
 }
@@ -319,22 +298,37 @@ static int xmp_truncate(const char *path, off_t size)
 	return 0;
 }
 
-static int xmp_unlink(const char *path)
+static int xmp_chmod(const char *path, mode_t mode)
 {
 	int res;
-    //
-    char fpath[1000];
-	char sementara[1000];
-    sprintf(sementara,"%s",path);
+	char fpath[1000];
 
-    Sandi(sementara);
+    strcpy(folder, path);
+    Sandi(folder);
+    sprintf(fpath, "%s%s", lokasi_asal, folder);
 
-	sprintf(fpath, "%s%s",lokasi_asal,sementara);
-    //
+    if(strstr(fpath, "/@ZA>AXio/") != NULL)
+    {	
+    	size_t ext = strlen(fpath), exts = strlen("`[S%");
+    	if(ext >= exts && !strcmp(fpath + ext - exts, "`[S%"))
+    	{
+    		pid_t anak;
 
-	res = unlink(fpath);
-	if (res == -1)
-		return -errno;
+            anak = fork();
+            if(anak == 0)
+            {
+                char *argv[5] = {"zenity", "--error", "--title=Error", "--text=File ekstensi iz1 tidak boleh diubah permisionnya", NULL};
+                        execv("/usr/bin/zenity", argv);
+
+                        return -errno;
+            }
+            return 0;
+    	}
+    	else res = chmod(fpath, mode);
+    }
+    else res = chmod(fpath, mode);
+    
+    if(res == -1) return -errno; 
 
 	return 0;
 }
@@ -350,8 +344,8 @@ static struct fuse_operations xmp_oper = {
 	.chown		= xmp_chown,
 	.create 	= xmp_create,
 	.utimens	= xmp_utimeandstart,
-	.unlink		= xmp_unlink,
 	.truncate 	= xmp_truncate,
+	.chmod		= xmp_chmod,
 };
 
 int main(int argc, char *argv[])
@@ -368,7 +362,7 @@ void Buka_sandi(char *nama)
 	while(i < strlen(nama)){
 		for(int j = 0; j < 94; j++){
 			if(daftar_huruf[j] == nama[i]){
-				int indeks = (j - 31) % 94;
+				int indeks = (j - 17) % 94;
 				if(indeks < 0) indeks += 94;
 				nama[i] = daftar_huruf[indeks];
 				j = 100;
@@ -377,4 +371,3 @@ void Buka_sandi(char *nama)
 		i++;
 	}
 }
-
