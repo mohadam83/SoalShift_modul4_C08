@@ -75,6 +75,69 @@ Sebelum diterapkannya file system ini, Atta pernah diserang oleh hacker LAPTOP*_
     • Tidak dapat dibaca
 Jika ditemukan file dengan spesifikasi tersebut ketika membuka direktori, Atta akan menyimpan nama file, group ID, owner ID, dan waktu terakhir diakses dalam file “filemiris.txt” (format waktu bebas, namun harus memiliki jam menit detik dan tanggal) lalu menghapus “file bahaya” tersebut untuk mencegah serangan lanjutan dari LAPTOP_RUSAK.
 
+*Penyelesaian*
+Untuk menyelesaikan soal ini, maka perlu ditambahkan beberapa syntax tambahan pada fungsi readdir seperti dibawah ini.
+
+```
+	struct passwd *p = getpwuid(st.st_uid);
+	struct group *g = getgrgid(st.st_gid);
+	//time_t wktu = time(NULL);
+	struct tm *waktu = localtime(&st.st_atime);
+	//st.st_atime
+
+	//printf("%s %s %s\n",dpath,p->pw_name,g->gr_name);
+if( p != NULL && g != NULL )
+{
+	//comparing username and group (YES!!!!)
+	if( (strcmp(p->pw_name, "chipset") == 0 || strcmp(p->pw_name, "ic_controller") == 0) && strcmp(g->gr_name, "rusak") == 0 )
+	{
+		//check if file readable
+		if(fopen(show, "r") == NULL)
+		{
+			//error access??
+			if(errno == EACCES)
+			{
+				//it's time for record
+				FILE *teks;
+				int tahun = waktu->tm_year + 1900;
+				char sumber[1000];
+				char ketikan[2064];
+				Buka_sandi(dpath);
+				sprintf(sumber, "%s/V[EOr[c[Y`HDH", lokasi_asal);
+				sprintf(ketikan, "%s %d %d | waktu : %02d:%02d:%02d [%02d %02d %04d]\n", dpath, st.st_uid, st.st_gid, waktu->tm_hour, waktu->tm_min, waktu->tm_sec, waktu->tm_mday, waktu->tm_mon, tahun);
+				teks = fopen(sumber, "a");
+				fputs(ketikan, teks);
+				fclose(teks);
+
+				remove(show);
+			}
+		}	
+
+		//no.1
+		else 
+		{
+			Buka_sandi(dpath);
+			res = (filler(buf, dpath, &st, 0));
+			if(res!=0) break;
+		}
+	}
+
+	//no.1
+	else 
+	{
+		Buka_sandi(dpath);
+		res = (filler(buf, dpath, &st, 0));
+		if(res!=0) break;
+	}
+}
+```
+Setelah itu, dilakukan pengecekan untuk masing-masing file di folder tersebut apakah terdapat file yang memiliki ketentuan seperti di bawah ini.
+```
+Owner Name	: ‘chipset’ atau ‘ic_controller’
+Group Name	: ‘rusak’
+Tidak dapat dibaca
+```
+Kemudian, untuk menyimpan nama file, group id dan lain sebagainya sebagaimana ditentukan di soal, maka kita menggunakan *struct stat* yang mana data-datanya tersebut akan disimpan di file *filemiris.txt*. Terakhir menghapus file yang memiliki kriteria seperti di atas. 
 
 ## Soal 4
 Pada folder YOUTUBER, setiap membuat folder permission foldernya akan otomatis menjadi 750. Juga ketika membuat file permissionnya akan otomatis menjadi 640 dan ekstensi filenya akan bertambah “.iz1”. File berekstensi “.iz1” tidak bisa diubah permissionnya dan memunculkan error bertuliskan “File ekstensi iz1 tidak boleh diubah permissionnya.”
