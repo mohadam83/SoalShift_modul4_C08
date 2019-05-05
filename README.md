@@ -142,6 +142,57 @@ Kemudian, untuk menyimpan nama file, group id dan lain sebagainya sebagaimana di
 ## Soal 4
 Pada folder YOUTUBER, setiap membuat folder permission foldernya akan otomatis menjadi 750. Juga ketika membuat file permissionnya akan otomatis menjadi 640 dan ekstensi filenya akan bertambah “.iz1”. File berekstensi “.iz1” tidak bisa diubah permissionnya dan memunculkan error bertuliskan “File ekstensi iz1 tidak boleh diubah permissionnya.”
 
+*Penyelesaian*
+Buatlah fungsi yang pada saat membuat folder (mkdir) di dalam folder YOUTUBER, permission akan berubah menjadi 750 yang artinya adalah file tersebut hanya bisa di rwx oleh user, r-x oleh group dan --- oleh world(no access). Pertama buatlah suatu string untuk menyimpan/mengcopy direktori tempat kita membuat folder tersebut, setelah itu cek apakah kita membuat folder tersebut di dalam folder YOUTUBER, jika ya maka permission akan otomatis berubah menjadi 750 
+```
+	if(strstr(fpath, "/@ZA>AXio/") != NULL)
+    {
+    	res = mkdir(fpath, 0750);
+    }
+    else res = mkdir(fpath, mode);
+```
+Untuk pembuatan file, proses awalnya kurang lebih sama seperti membuat folder, hanya saya permission tersebut akan otomatis berubah menjadi 640 yang artinya rw- oleh user, r-- oleh group, dan --- oleh world(no access).
+```
+	if(strstr(fpath, "/@ZA>AXio/") != NULL)
+    {
+    	res = creat(fpath, 0640);
+    }
+    else res = creat(fpath, mode);
+```
+Dan juga file tersebut akan diberikan ekstensi .z1 secara otomatis
+```
+if(strstr(fpath, "/@ZA>AXio/") != NULL)
+    {
+    	strcpy(file_baru, fpath);
+    	strcat(file_baru, "`[S%");
+    	res2 = rename(fpath, file_baru);
+    	if(res2==-1)
+        {
+                return -errno;
+        }
+    }
+```
+Selain itu, agar file yang berekstensi .z1 tidak dapat diubah permissionnya, maka buatlah program seperti berikut yang akan menolak perubahan permission dan akan memberikan pesan "ekstensi iz1 tidak boleh diubah permisionnya".
+```
+if(strstr(fpath, "/@ZA>AXio/") != NULL)
+    {	
+    	size_t ext = strlen(fpath), exts = strlen("`[S%");
+    	if(ext >= exts && !strcmp(fpath + ext - exts, "`[S%"))
+    	{
+    		pid_t anak;
 
+            anak = fork();
+            if(anak == 0)
+            {
+                char *argv[5] = {"zenity", "--error", "--title=Error", "--text=File ekstensi iz1 tidak boleh diubah permisionnya", NULL};
+                        execv("/usr/bin/zenity", argv);
+
+                        return -errno;
+            }
+            return 0;
+    	}
+    	else res = chmod(fpath, mode);
+    }
+```
 ## Soal 5
 Ketika mengedit suatu file dan melakukan save, maka akan terbuat folder baru bernama Backup kemudian hasil dari save tersebut akan disimpan pada backup dengan nama *namafile_[timestamp].ekstensi*. Dan ketika file asli dihapus, maka akan dibuat folder bernama RecycleBin, kemudian file yang dihapus beserta semua backup dari file yang dihapus tersebut (jika ada) di zip dengan nama namafile_deleted_[timestamp].zip dan ditaruh kedalam folder RecycleBin (file asli dan backup terhapus). Dengan format [timestamp] adalah yyyy-MM-dd_HH:mm:ss
